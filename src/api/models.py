@@ -1,10 +1,12 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
+from sqlalchemy import ForeignKey
+
 
 db = SQLAlchemy()
 
-class User(db.Model):
-    __tablename__ = 'user'
+class Users(db.Model):
+    __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -22,6 +24,32 @@ class User(db.Model):
             "email": self.email,
             # do not serialize the password, its a security breach
         }
+
+class Favorites(db.Model):
+    __tablename__='favorites'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('users.id'), nullable=False)
+    item_id = db.Column(db.Integer, nullable=False)
+    item_type = db.Column(db.String, nullable=False)
+    __table_args__ = (db.UniqueConstraint('user_id', 'item_id', 'item_type', name='_user_item_uc'),)
+
+    @property
+    def item(self):
+        if self.item_type == 'people':
+            return People.query.get(self.item_id)
+        elif self.item_type == 'planet':
+            return Planets.query.get(self.item_id)
+        elif self.item_type == 'starship':
+            return Starships.query.get(self.item_id)
+        else:
+            return None
+
+class People_Starships_Rel(db.Model):
+    __tablename__ = 'people_starships_rel'
+
+    people_id = db.Column(db.Integer, ForeignKey('people.id'), primary_key=True)
+    starship_id  = db.Column(db.Integer, ForeignKey('starships.id'), primary_key=True)
     
 class People(db.Model):
     __tablename__ = 'people'
@@ -35,7 +63,7 @@ class People(db.Model):
     gender =  db.Column(db.String(80), unique=False, nullable=True)
     hair_color =  db.Column(db.String(80), unique=False, nullable=True)
     skin_color = db.Column(db.String(80), unique=False, nullable=True)
-    planet_id = db.Column(db.Integer, db.ForeignKey('planets.id'))
+    planet_id = db.Column(db.Integer, ForeignKey('planets.id'), nullable=False)
 
     planet = db.relationship("Planets", back_populates='residents')
 
@@ -44,6 +72,7 @@ class People(db.Model):
     
     def serialize(self):
         return {
+            'id': self.id,
             'name': self.name,
             'birth_year' : self.birth_year,
             'species': self.species,
@@ -58,10 +87,44 @@ class Planets(db.Model):
     __tablename__ = 'planets'
 
     id = db.Column(db.Integer, primary_key=True)
-    name =
-    diameter =
-    climate =
-    terrain =
-    population = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    diameter = db.Column(db.Integer, unique=False, nullable=False)
+    climate = db.Column(db.String(80), unique=False, nullable=False)
+    terrain = db.Column(db.String(120), unique=False, nullable=False)
+    population = db.Column(db.Integer, unique=False, nullable=False)
+
     residents = db.relationship('People', back_populates='planet')
 
+    def __repr__(self):
+        return f'<Planet {self.name}>'
+    
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name':  self.name,
+            'diameter': self.diameter,
+            'climate': self.climate,
+            'terrain': self.terrain,
+            'population': self.population,
+        }
+
+
+class Starships(db.Model):
+    __tablename__ = 'starships'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), unique=True, nullable=False)
+    model = db.Column(db.String(120), unique=True, nullable=False)
+    manufacturer = db.Column(db.String(120), unique=False, nullable=False)
+    passengers = db.Column(db.Integer, unique=False, nullable=False)
+
+    def __repr__(self):
+        return f'<Starship {self.name}>'
+    
+    def serialize(self):
+        return {
+            'name': self.name,
+            'model': self.model,
+            'manufacturer': self.manufacturer,
+            'passengers': self.passengers
+        }

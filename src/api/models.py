@@ -30,20 +30,29 @@ class Favorites(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, ForeignKey('users.id'), nullable=False)
-    item_id = db.Column(db.Integer, nullable=False)
-    item_type = db.Column(db.String, nullable=False)
-    __table_args__ = (db.UniqueConstraint('user_id', 'item_id', 'item_type', name='_user_item_uc'),)
+    people_id = db.Column(db.Integer, ForeignKey('people.id'), nullable=True)
+    planet_id = db.Column(db.Integer, ForeignKey('planets.id'), nullable=True)
+    starship_id_ = db.Column(db.Integer, ForeignKey('starships.id'), nullable=True)
 
-    @property
-    def item(self):
-        if self.item_type == 'people':
-            return People.query.get(self.item_id)
-        elif self.item_type == 'planet':
-            return Planets.query.get(self.item_id)
-        elif self.item_type == 'starship':
-            return Starships.query.get(self.item_id)
-        else:
-            return None
+    user = db.relationship('Users', back_populates='favorites')
+    people = db.relationship('People', back_populates='favorites')
+    planet = db.relationship('Planets', back_populates='favorites')
+    starship = db.relationship('Starships', back_populates='favorites')
+
+    def __repr__(self):
+        if self.people_id: return f'<User_id= {self.user_id} Post_id = {self.people_id}>'
+        elif self.planet_id: return f'<User_id= {self.user_id} Post_id = {self.planet_id}>'
+        elif self.starship_id: return f'<User_id= {self.user_id} Post_id = {self.starship_id}>'
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'people_id': self.people_id,
+            'planet_id': self.planet_id,
+            'starship_id': self.starship_id,
+
+        }
 
 class People_Starships_Rel(db.Model):
     __tablename__ = 'people_starships_rel'
@@ -65,7 +74,7 @@ class People(db.Model):
     skin_color = db.Column(db.String(80), unique=False, nullable=True)
     planet_id = db.Column(db.Integer, ForeignKey('planets.id'), nullable=False)
 
-    planet = db.relationship("Planets", back_populates='residents')
+    planet = db.relationship("Planets", back_populates='people')
 
     def __repr__(self):
         return f'<People {self.name}>'
@@ -93,7 +102,7 @@ class Planets(db.Model):
     terrain = db.Column(db.String(120), unique=False, nullable=False)
     population = db.Column(db.Integer, unique=False, nullable=False)
 
-    residents = db.relationship('People', back_populates='planet')
+    people = db.relationship('People', back_populates='planet')
 
     def __repr__(self):
         return f'<Planet {self.name}>'

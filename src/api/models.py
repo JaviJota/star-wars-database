@@ -5,8 +5,8 @@ from sqlalchemy import ForeignKey
 
 db = SQLAlchemy()
 
-class Users(db.Model):
-    __tablename__ = 'users'
+class User(db.Model):
+    __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -14,6 +14,8 @@ class Users(db.Model):
     first_name = db.Column(db.String(50), unique=False, nullable=False)
     last_name = db.Column(db.String(100), unique=False, nullable=False)
     creation_date = db.Column(db.Date, default=func.current_date(), unique=False, nullable=False)
+
+    favorites = db.relationship('Favorites', back_populates='user')
 
     def __repr__(self):
         return f'<User {self.email}>'
@@ -29,21 +31,25 @@ class Favorites(db.Model):
     __tablename__='favorites'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
     people_id = db.Column(db.Integer, ForeignKey('people.id'), nullable=True)
     planet_id = db.Column(db.Integer, ForeignKey('planets.id'), nullable=True)
     starship_id_ = db.Column(db.Integer, ForeignKey('starships.id'), nullable=True)
 
-    user = db.relationship('Users', back_populates='favorites')
+    user = db.relationship('User', back_populates='favorites')
     people = db.relationship('People', back_populates='favorites')
     planet = db.relationship('Planets', back_populates='favorites')
     starship = db.relationship('Starships', back_populates='favorites')
 
     def __repr__(self):
-        if self.people_id: return f'<User_id= {self.user_id} Post_id = {self.people_id}>'
-        elif self.planet_id: return f'<User_id= {self.user_id} Post_id = {self.planet_id}>'
-        elif self.starship_id: return f'<User_id= {self.user_id} Post_id = {self.starship_id}>'
-
+        if self.people_id: 
+            return f'<User_id= {self.user_id} Post_id = {self.people_id}>'
+        elif self.planet_id: 
+            return f'<User_id= {self.user_id} Post_id = {self.planet_id}>'
+        elif self.starship_id: 
+            return f'<User_id= {self.user_id} Post_id = {self.starship_id}>'
+        return f'<Favorite {self.id}>'
+    
     def serialize(self):
         return {
             'id': self.id,
@@ -75,6 +81,7 @@ class People(db.Model):
     planet_id = db.Column(db.Integer, ForeignKey('planets.id'), nullable=False)
 
     planet = db.relationship("Planets", back_populates='people')
+    favorites = db.relationship('Favorites', back_populates='people')
 
     def __repr__(self):
         return f'<People {self.name}>'
@@ -103,6 +110,8 @@ class Planets(db.Model):
     population = db.Column(db.Integer, unique=False, nullable=False)
 
     people = db.relationship('People', back_populates='planet')
+    favorites = db.relationship('Favorites', back_populates='planet')
+
 
     def __repr__(self):
         return f'<Planet {self.name}>'
@@ -126,6 +135,9 @@ class Starships(db.Model):
     model = db.Column(db.String(120), unique=True, nullable=False)
     manufacturer = db.Column(db.String(120), unique=False, nullable=False)
     passengers = db.Column(db.Integer, unique=False, nullable=False)
+
+    favorites = db.relationship('Favorites', back_populates='starship')
+
 
     def __repr__(self):
         return f'<Starship {self.name}>'

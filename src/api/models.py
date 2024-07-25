@@ -30,60 +30,50 @@ class User(db.Model):
         }
     
 #---------------------------------------------
-    
+
 # class Favorites(db.Model):
-#     __tablename__ = 'favorites'
+#     __tablename__='favorites'
 
 #     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-#     item_id = db.Column(db.Integer, nullable=False)
-#     item_type = db.Column(db.String, nullable=False)
-#     __table_args__ = (db.UniqueConstraint('user_id', 'item_id', 'item_type', name='_user_item_uc'),)
+#     user_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
+#     people_id = db.Column(db.Integer, ForeignKey('people.id'), nullable=True)
+#     planet_id = db.Column(db.Integer, ForeignKey('planets.id'), nullable=True)
+#     starship_id_ = db.Column(db.Integer, ForeignKey('starships.id'), nullable=True)
 
-#     @property
-#     def item(self):
-#         if self.item_type == 'people':
-#             return People.query.get(self.item_id)
-#         elif self.item_type == 'planet':
-#             return Planets.query.get(self.item_id)
-#         elif self.item_type == 'starship':
-#             return Starships.query.get(self.item_id)
-#         else:
-#             return None
-
-#---------------------------------------------
+#     user = db.relationship('User', back_populates='favorites')
+#     people = db.relationship('People', back_populates='favorites')
+#     planet = db.relationship('Planets', back_populates='favorites')
+#     starship = db.relationship('Starships', back_populates='favorites')
 
 class Favorites(db.Model):
-    __tablename__='favorites'
+    __tablename__ = 'favorites'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, ForeignKey('user.id'), nullable=False)
-    people_id = db.Column(db.Integer, ForeignKey('people.id'), nullable=True)
-    planet_id = db.Column(db.Integer, ForeignKey('planets.id'), nullable=True)
-    starship_id_ = db.Column(db.Integer, ForeignKey('starships.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    item_id = db.Column(db.Integer, nullable=False)
+    item_type = db.Column(db.String, nullable=False)
+    __table_args__ = (db.UniqueConstraint('user_id', 'item_id', 'item_type', name='_user_item_uc'),)
 
-    user = db.relationship('User', back_populates='favorites')
-    people = db.relationship('People', back_populates='favorites')
-    planet = db.relationship('Planets', back_populates='favorites')
-    starship = db.relationship('Starships', back_populates='favorites')
+    @property
+    def item(self):
+        if self.item_type == 'people':
+            return People.query.get(self.item_id)
+        elif self.item_type == 'planet':
+            return Planets.query.get(self.item_id)
+        elif self.item_type == 'starship':
+            return Starships.query.get(self.item_id)
+        else:
+            return None
     
     def __repr__(self):
-        if self.people_id: 
-            return f'<User_id= {self.user_id} Post_id = {self.people_id}>'
-        elif self.planet_id: 
-            return f'<User_id= {self.user_id} Post_id = {self.planet_id}>'
-        elif self.starship_id: 
-            return f'<User_id= {self.user_id} Post_id = {self.starship_id}>'
-        return f'<Favorite {self.id}>'
+        return f'<Favorite: {self.id}, user: {self.user_id}>'
     
     def serialize(self):
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'people_id': self.people_id,
-            'planet_id': self.planet_id,
-            'starship_id': self.starship_id,
-
+            'item_id': self.item_id,
+            'item_type': self.item_type,
         }
 
 #---------------------------------------------
@@ -93,6 +83,12 @@ class People_Starships_Rel(db.Model):
 
     people_id = db.Column(db.Integer, ForeignKey('people.id'), primary_key=True)
     starship_id  = db.Column(db.Integer, ForeignKey('starships.id'), primary_key=True)
+
+    def serialize(self):
+        return {
+            "people_id": self.people_id,
+            "starship": self.starship_id,
+        }
     
 #---------------------------------------------
 
@@ -112,11 +108,17 @@ class People(db.Model):
 
     planet = db.relationship("Planets", back_populates='people')
     favorites = db.relationship('Favorites', back_populates='people')
-    #favorites = db.relationship('Favorites', primaryjoin="and_(People.id==foreign(Favorites.item_id), Favorites.item_type=='people')", back_populates='user')
+    favorites = db.relationship('Favorites', primaryjoin="and_(People.id==foreign(Favorites.item_id), Favorites.item_type=='people')", back_populates='user')
     starships = db.relationship('Starships', secondary='people_starships_rel', back_populates='pilots')
 
     def __repr__(self):
         return f'<People {self.name}>'
+    
+    def serialize_simple(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
     
     def serialize(self):
         return {
@@ -146,7 +148,7 @@ class Planets(db.Model):
 
     people = db.relationship('People', back_populates='planet')
     favorites = db.relationship('Favorites', back_populates='planet')
-    #favorites = db.relationship('Favorites', primaryjoin="and_(Planets.id==foreign(Favorites.item_id), Favorites.item_type=='planet')", back_populates='user')
+    favorites = db.relationship('Favorites', primaryjoin="and_(Planets.id==foreign(Favorites.item_id), Favorites.item_type=='planet')", back_populates='user')
 
     def __repr__(self):
         return f'<Planet {self.name}>'
@@ -173,11 +175,17 @@ class Starships(db.Model):
     passengers = db.Column(db.Integer, unique=False, nullable=False)
 
     favorites = db.relationship('Favorites', back_populates='starship')
-    #favorites = db.relationship('Favorites', primaryjoin="and_(Starships.id==foreign(Favorites.item_id), Favorites.item_type=='starship')", back_populates='user')
+    favorites = db.relationship('Favorites', primaryjoin="and_(Starships.id==foreign(Favorites.item_id), Favorites.item_type=='starship')", back_populates='user')
     pilots = db.relationship('People', secondary='people_starships_rel', back_populates='starships')
 
     def __repr__(self):
         return f'<Starship {self.name}>'
+    
+    def serialize_simple(self):
+        return {
+        'id': self.id,
+        'name': self.name
+    }
     
     def serialize(self):
         return {

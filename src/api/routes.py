@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User, Favorites, People, Planets, Starships
+from api.models import db, User, Favorites, People, Planets, Starships, People_Starships_Rel
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -292,3 +292,26 @@ def delete_all_starships():
     db.session.commit()
 
     return jsonify({'msg': 'ok'}), 200
+
+#--------------------------------
+
+@api.route('/people_starships_rel', methods=['POST'])
+def people_starships_rel():
+    data = request.json
+    new_rel = People_Starships_Rel(
+        people_id = data['people_id'],
+        starship_id = data['starship_id']
+        )
+
+    db.session.add(new_rel)
+    db.session.commit()
+
+    return jsonify({'msg': 'ok'}), 200
+
+@api.route('/people_starships_rel', methods=['GET'])
+def get_people_starships_rel():
+    relations = People_Starships_Rel.query.all()
+    relations = [rel.serialize() for rel in relations]
+
+    return jsonify({'msg': 'ok',
+                    'relations': relations}), 200

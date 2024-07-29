@@ -5,3 +5,11 @@
     one more css for each page that will contain the selected used 
     on that page only (the ones not reused in other pages).
 */
+
+body {
+    background-image: url('https://www.witf.io/wp-content/uploads/2020/11/iStock-1159238834-1628x1080.jpg');
+    background-size: cover;
+    background-position: center;
+    margin: 0;
+    padding: 0;
+}
